@@ -469,15 +469,14 @@ export async function getSharePointItemPreview(
 }
 
 /**
- * Returns a short-lived pre-authenticated download URL for a drive item.
- * Does NOT fetch file bytes — safe for direct browser delivery.
+ * Read trusted file metadata and its temporary download URL without file bytes.
  */
-export async function getSharePointItemDownloadUrl(
+export async function getSharePointItemPlaybackMetadata(
   driveId: string,
   itemId: string
-): Promise<string | null> {
+) {
   const res = await graphRequest(
-    `/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}?select=id,name,@microsoft.graph.downloadUrl`
+    `/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}?select=id,name,file,@microsoft.graph.downloadUrl`
   );
   const data = await res.json();
 
@@ -485,7 +484,18 @@ export async function getSharePointItemDownloadUrl(
     throw new Error(data.error?.message || "SharePoint item metadata failed");
   }
 
-  const downloadUrl = data["@microsoft.graph.downloadUrl"];
+  return {
+    name: typeof data.name === "string" ? data.name : "",
+    mimeType: typeof data.file?.mimeType === "string" ? data.file.mimeType : "",
+    downloadUrl: data["@microsoft.graph.downloadUrl"] as unknown,
+  };
+}
+
+export async function getSharePointItemDownloadUrl(
+  driveId: string,
+  itemId: string
+): Promise<string | null> {
+  const { downloadUrl } = await getSharePointItemPlaybackMetadata(driveId, itemId);
   if (typeof downloadUrl === "string" && downloadUrl.startsWith("http")) {
     return downloadUrl;
   }

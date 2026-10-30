@@ -146,7 +146,7 @@ async function recordContentInventory({
 
   if (existing) {
     return ContentInventory.findByIdAndUpdate(existing._id, payload, {
-      new: true,
+      returnDocument: 'after',
     });
   }
 
