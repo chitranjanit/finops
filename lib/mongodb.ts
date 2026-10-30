@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { setServers } from "node:dns";
 
 const MONGO_URI =
   process.env.MONGO_URI || process.env.MONGODB_URI;
@@ -32,6 +33,14 @@ export async function connectDB() {
 
   // create connection
   if (!cached.promise) {
+    // Opt-in for networks whose default DNS resolver rejects Atlas SRV lookups.
+    // Leave unset to preserve the deployment's DNS configuration.
+    const dnsServers = process.env.MONGODB_DNS_SERVERS
+      ?.split(",")
+      .map((server) => server.trim())
+      .filter(Boolean);
+    if (dnsServers?.length) setServers(dnsServers);
+
     console.log("⏳ Connecting to MongoDB...");
 
     cached.promise = mongoose
@@ -45,6 +54,12 @@ export async function connectDB() {
       });
   }
 
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (error) {
+    // A rejected promise must not poison every later login attempt.
+    cached.promise = null;
+    throw error;
+  }
   return cached.conn;
 }
