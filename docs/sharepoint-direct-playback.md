@@ -33,6 +33,30 @@ node scripts/test-sharepoint-token-cache.mjs
 npx tsc --noEmit --incremental false
 ```
 
+## Diagnose a missing redirect
+
+If the app returns a Microsoft authentication error instead of a 307, the browser
+cannot make the second request to SharePoint. The token request must succeed
+before a temporary playback URL can be obtained. Changing the Referer or adding
+the website domain does not repair an invalid Microsoft client secret.
+
+Run a fresh, uncached authentication check:
+
+```sh
+# Local project, loading the local Next.js environment:
+npm run check:sharepoint -- --local
+
+# Inside the actual Railway production container (for example via railway ssh):
+npm run check:sharepoint
+```
+
+Compare tenant/client IDs, secret length and secret fingerprint. The command
+never prints the secret or token. A different fingerprint means different
+effective secrets; code 7000215 means Microsoft rejected the configured secret.
+Use the actual running container rather than a local shell with exported
+Railway variables, particularly when variables are sealed. Network/DNS errors
+are reported separately from Microsoft's credential errors.
+
 ## Limitations
 
 This trial uses pre-authenticated URLs: students do not need Microsoft sign-in,

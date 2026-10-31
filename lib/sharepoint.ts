@@ -9,14 +9,25 @@ type SharePointConfig = {
   basePath: string;
 };
 
+function readSharePointSetting(key: string) {
+  let value = (process.env[key] || "").trim();
+  // Dashboard values may accidentally include .env-style wrapping quotes.
+  if ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))) {
+    value = value.slice(1, -1).trim();
+  }
+  // Preserve literal +, &, %, $, backslashes, etc. URLSearchParams encodes them.
+  return value;
+}
+
 export function getSharePointConfig(): SharePointConfig {
   return {
-    tenantId: process.env.SHAREPOINT_TENANT_ID || "",
-    clientId: process.env.SHAREPOINT_CLIENT_ID || "",
-    clientSecret: process.env.SHAREPOINT_CLIENT_SECRET || "",
-    driveId: process.env.SHAREPOINT_DRIVE_ID || "",
-    siteId: process.env.SHAREPOINT_SITE_ID || "",
-    basePath: process.env.SHAREPOINT_BASE_PATH || "",
+    tenantId: readSharePointSetting("SHAREPOINT_TENANT_ID"),
+    clientId: readSharePointSetting("SHAREPOINT_CLIENT_ID"),
+    clientSecret: readSharePointSetting("SHAREPOINT_CLIENT_SECRET"),
+    driveId: readSharePointSetting("SHAREPOINT_DRIVE_ID"),
+    siteId: readSharePointSetting("SHAREPOINT_SITE_ID"),
+    basePath: readSharePointSetting("SHAREPOINT_BASE_PATH"),
   };
 }
 
